@@ -7,9 +7,8 @@
     "start": "node api/index.js"
   },
   "dependencies": {
-    "ytsr": "3.6.0",
-    "@distube/ytdl-core": "^4.16.10",
-    "cors": "^2.8.5"
+    "youtube-search-api": "^1.1.4",
+    "@distube/ytdl-core": "^4.16.10"
   },
   "engines": {
     "node": "20.x"
