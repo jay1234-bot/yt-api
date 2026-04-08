@@ -1,3 +1,14 @@
+// Uses Invidious public instances to get YouTube audio stream URL
+// No bot detection, no auth needed, completely free
+
+const INVIDIOUS_INSTANCES = [
+  'https://inv.nadeko.net',
+  'https://invidious.nerdvpn.de',
+  'https://invidious.privacydev.net',
+  'https://yt.cdaut.de',
+  'https://invidious.io.lol'
+];
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -7,51 +18,45 @@ module.exports = async (req, res) => {
   const { id } = req.query;
   if (!id) return res.status(400).json({ error: 'Video ID required' });
 
-  try {
-    // cobalt.tools v7 API format
-    const response = await fetch('https://api.cobalt.tools/api/json', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        url: `https://www.youtube.com/watch?v=${id}`,
-        vCodec: 'h264',
-        vQuality: '720',
-        aFormat: 'mp3',
-        isAudioOnly: true,
-        isNoTTWatermark: true,
-        isTTFullAudio: false,
-        isAudioMuted: false,
-        dubLang: false,
-        disableMetadata: false,
-        twitterGif: false,
-        tiktokH265: false
-      })
-    });
+  // Try each instance until one works
+  for (const instance of INVIDIOUS_INSTANCES) {
+    try {
+      const response = await fetch(`${instance}/api/v1/videos/${id}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        signal: AbortSignal.timeout(8000)
+      });
 
-    const data = await response.json();
-    console.log('Cobalt response:', JSON.stringify(data));
+      if (!response.ok) continue;
+      const data = await response.json();
 
-    // cobalt returns status: 'stream', 'redirect', 'picker', 'error'
-    if (data.status === 'error') {
-      throw new Error(data.text || 'Cobalt error');
+      // Get best audio format
+      const audioFormats = (data.adaptiveFormats || [])
+        .filter(f => f.type?.startsWith('audio/') && f.url)
+        .sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
+
+      if (!audioFormats.length) continue;
+
+      const best = audioFormats[0];
+      const thumbnail = data.videoThumbnails?.find(t => t.quality === 'high')?.url
+        || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+
+      return res.json({
+        success: true,
+        streamUrl: best.url,
+        title: data.title || id,
+        artist: data.author || 'YouTube',
+        duration: data.lengthSeconds || 0,
+        thumbnail
+      });
+
+    } catch (err) {
+      console.log(`Instance ${instance} failed:`, err.message);
+      continue;
     }
-
-    const streamUrl = data.url;
-    if (!streamUrl) throw new Error('No URL in cobalt response: ' + JSON.stringify(data));
-
-    return res.json({
-      success: true,
-      streamUrl,
-      title: data.filename || id,
-      artist: 'YouTube',
-      thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
-    });
-
-  } catch (err) {
-    console.error('Stream error:', err.message);
-    return res.status(500).json({ error: 'Stream failed', details: err.message });
   }
+
+  return res.status(500).json({
+    error: 'All instances failed',
+    details: 'Could not fetch stream from any Invidious instance'
+  });
 };
