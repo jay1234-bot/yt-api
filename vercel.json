@@ -5,6 +5,20 @@
       "maxDuration": 30
     }
   },
+  "routes": [
+    {
+      "src": "/api/search",
+      "dest": "/api/search.js"
+    },
+    {
+      "src": "/api/stream",
+      "dest": "/api/stream.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.js"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
