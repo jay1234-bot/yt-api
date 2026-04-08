@@ -1,5 +1,4 @@
-// /api/stream?id=VIDEO_ID  — streams audio directly
-const ytdl = require('ytdl-core');
+const ytdl = require('@distube/ytdl-core');
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -24,20 +23,13 @@ module.exports = async (req, res) => {
 
     if (!format) return res.status(404).json({ error: 'No audio format found' });
 
-    const title = info.videoDetails.title;
-    const duration = info.videoDetails.lengthSeconds;
-    const thumbnail = info.videoDetails.thumbnails?.slice(-1)[0]?.url || '';
-    const author = info.videoDetails.author?.name || 'Unknown';
-
-    // Return stream URL directly (redirect) so browser can play it
-    res.setHeader('Content-Type', 'application/json');
     return res.json({
       success: true,
       streamUrl: format.url,
-      title,
-      artist: author,
-      duration: parseInt(duration),
-      thumbnail,
+      title: info.videoDetails.title,
+      artist: info.videoDetails.author?.name || 'Unknown',
+      duration: parseInt(info.videoDetails.lengthSeconds),
+      thumbnail: info.videoDetails.thumbnails?.slice(-1)[0]?.url || '',
       mimeType: format.mimeType
     });
   } catch (err) {
