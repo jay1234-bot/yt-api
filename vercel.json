@@ -1,30 +1,19 @@
 {
   "version": 2,
   "functions": {
-    "api/*.js": {
+    "api/stream.js": {
       "maxDuration": 30
+    },
+    "api/search.js": {
+      "maxDuration": 15
     }
   },
-  "routes": [
-    {
-      "src": "/api/search",
-      "dest": "/api/search.js"
-    },
-    {
-      "src": "/api/stream",
-      "dest": "/api/stream.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.js"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "*" }
       ]
     }
