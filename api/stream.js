@@ -8,8 +8,8 @@ module.exports = async (req, res) => {
   if (!id) return res.status(400).json({ error: 'Video ID required' });
 
   try {
-    // Use cobalt.tools API - free, no bot detection
-    const response = await fetch('https://api.cobalt.tools/', {
+    // cobalt.tools v7 API format
+    const response = await fetch('https://api.cobalt.tools/api/json', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -17,20 +17,30 @@ module.exports = async (req, res) => {
       },
       body: JSON.stringify({
         url: `https://www.youtube.com/watch?v=${id}`,
-        downloadMode: 'audio',
-        audioFormat: 'mp3',
-        audioBitrate: '128'
+        vCodec: 'h264',
+        vQuality: '720',
+        aFormat: 'mp3',
+        isAudioOnly: true,
+        isNoTTWatermark: true,
+        isTTFullAudio: false,
+        isAudioMuted: false,
+        dubLang: false,
+        disableMetadata: false,
+        twitterGif: false,
+        tiktokH265: false
       })
     });
 
-    if (!response.ok) throw new Error('Cobalt API error: ' + response.status);
     const data = await response.json();
+    console.log('Cobalt response:', JSON.stringify(data));
 
-    // cobalt returns { status: 'stream'|'redirect'|'tunnel', url: '...' }
-    if (data.status === 'error') throw new Error(data.error?.code || 'Cobalt error');
+    // cobalt returns status: 'stream', 'redirect', 'picker', 'error'
+    if (data.status === 'error') {
+      throw new Error(data.text || 'Cobalt error');
+    }
 
     const streamUrl = data.url;
-    if (!streamUrl) throw new Error('No stream URL from cobalt');
+    if (!streamUrl) throw new Error('No URL in cobalt response: ' + JSON.stringify(data));
 
     return res.json({
       success: true,
