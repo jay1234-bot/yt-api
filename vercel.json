@@ -1,19 +1,14 @@
 {
   "version": 2,
   "functions": {
-    "api/stream.js": {
-      "maxDuration": 30
-    },
-    "api/search.js": {
-      "maxDuration": 15
-    }
+    "api/*.js": { "maxDuration": 30 }
   },
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, DELETE, OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "*" }
       ]
     }
