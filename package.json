@@ -1,15 +1,12 @@
 {
   "name": "yt-music-api",
   "version": "1.0.0",
-  "description": "YouTube Music API proxy for CET Tracker",
   "main": "api/index.js",
-  "scripts": {
-    "start": "node api/index.js"
-  },
   "dependencies": {
-    "youtube-search-api": "^1.1.4"
+    "youtube-search-api": "^1.1.4",
+    "@vercel/blob": "^0.27.0",
+    "mongodb": "^6.8.0",
+    "cors": "^2.8.5"
   },
-  "engines": {
-    "node": "20.x"
-  }
+  "engines": { "node": "20.x" }
 }
