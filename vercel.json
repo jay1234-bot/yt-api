@@ -3,11 +3,18 @@
   "functions": {
     "api/*.js": { "maxDuration": 30 }
   },
+  "routes": [
+    { "src": "/api/search",  "dest": "/api/search.js"  },
+    { "src": "/api/stream",  "dest": "/api/stream.js"  },
+    { "src": "/api/user",    "dest": "/api/user.js"    },
+    { "src": "/api/gallery", "dest": "/api/gallery.js" },
+    { "src": "/(.*)",        "dest": "/api/index.js"   }
+  ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Origin",  "value": "*" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, POST, DELETE, OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "*" }
       ]
