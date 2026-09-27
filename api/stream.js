@@ -28,9 +28,18 @@ async function ensureYtDlp() {
 
 function runYtDlp(args) {
   return new Promise((resolve, reject) => {
-    execFile(YTDLP_PATH, args, { timeout: 25000, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
-      if (error) return reject(new Error((stderr || error.message).trim()));
-      resolve(stdout.trim());
+    execFile(YTDLP_PATH, args, { timeout: 30000, maxBuffer: 5 * 1024 * 1024 }, (error, stdout, stderr) => {
+      if (error) {
+        // Filter out warning messages but keep actual errors
+        const errorMsg = (stderr || error.message).trim();
+        if (errorMsg.includes('WARNING')) {
+          resolve(stdout.trim());
+        } else {
+          reject(new Error(errorMsg));
+        }
+      } else {
+        resolve(stdout.trim());
+      }
     });
   });
 }
@@ -51,10 +60,27 @@ module.exports = async (req, res) => {
   try {
     await ensureYtDlp();
     const url = `https://www.youtube.com/watch?v=${id}`;
-    const [streamUrl, info] = await Promise.all([
-      runYtDlp(['-f', 'bestaudio[ext=m4a]/bestaudio/best', '--get-url', '--no-playlist', '--no-warnings', url]),
-      runYtDlp(['--print', '%(title)s|||%(thumbnail)s|||%(uploader)s|||%(duration)s', '--no-playlist', '--no-warnings', url])
+
+    // Use --no-check-certificates and other flags to bypass bot detection
+    const streamUrl = await runYtDlp([
+      '-f', 'bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best',
+      '--get-url',
+      '--no-playlist',
+      '--no-warnings',
+      '--no-check-certificates',
+      '-R', '5',
+      '--socket-timeout', '30',
+      url
     ]);
+
+    const info = await runYtDlp([
+      '--print', '%(title)s|||%(thumbnail)s|||%(uploader)s|||%(duration)s',
+      '--no-playlist',
+      '--no-warnings',
+      '--no-check-certificates',
+      url
+    ]);
+
     const [title, thumbnail, artist, duration] = info.split('|||');
     const result = {
       streamUrl,
@@ -63,10 +89,20 @@ module.exports = async (req, res) => {
       thumbnail: thumbnail || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
       duration: Number.parseInt(duration, 10) || 0
     };
-    cache.set(`stream:${id}`, result, 60 * 1000);
+
+    cache.set(`stream:${id}`, result, 5 * 60 * 1000); // 5 min cache
     return res.json({ success: true, cached: false, ...result });
   } catch (error) {
-    console.error('Stream error:', error);
-    return res.status(502).json({ error: 'Unable to resolve this YouTube stream' });
+    console.error('Stream error:', error.message);
+
+    // Provide helpful error message
+    if (error.message.includes('bot') || error.message.includes('sign in')) {
+      return res.status(503).json({
+        error: 'YouTube is requiring authentication. Please try again in a few moments.',
+        hint: 'This usually resolves automatically after a short delay'
+      });
+    }
+
+    return res.status(502).json({ error: 'Unable to resolve this YouTube stream', details: error.message });
   }
 };
